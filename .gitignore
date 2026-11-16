@@ -1,0 +1,8 @@
+.env
+data/
+kev-upstream/
+frontend/node_modules/
+frontend/dist/
+backend/bin/
+backend/palmdemo
+*.log

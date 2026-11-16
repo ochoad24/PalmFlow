@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-palm_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-palm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-palm_demo_local}
+    ports:
+      - "54329:5432"
+    volumes:
+      - palm-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-palm} -d ${POSTGRES_DB:-palm_demo}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-palm}:${POSTGRES_PASSWORD:-palm_demo_local}@db:5432/${POSTGRES_DB:-palm_demo}?sslmode=disable
+      KEV_URL: ${KEV_URL:-http://host.docker.internal:8009}
+      KEV_API_KEY: ${KEV_API_KEY:-local-demo-key}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+    ports:
+      - "3080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  palm-db:
